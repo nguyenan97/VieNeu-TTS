@@ -137,6 +137,10 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
    Truy cập giao diện tại `http://127.0.0.1:7860`.
 
+   Muốn tải model ngay khi khởi động thay vì bấm "🔄 Tải Model", đặt `VIENEU_AUTOLOAD=1`
+   (Linux/macOS: `VIENEU_AUTOLOAD=1 uv run vieneu-web`; PowerShell: `$env:VIENEU_AUTOLOAD=1; uv run vieneu-web`).
+   `VIENEU_AUTOLOAD_BACKBONE` / `VIENEU_AUTOLOAD_DEVICE` để chọn backbone hoặc device khác (mặc định: VieNeu-TTS-v3-Turbo, Auto).
+
 
 ---
 

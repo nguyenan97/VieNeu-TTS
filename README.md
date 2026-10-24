@@ -126,6 +126,10 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
    Access the UI at `http://127.0.0.1:7860`.
 
+   To load the model at startup instead of clicking "🔄 Tải Model", set `VIENEU_AUTOLOAD=1`
+   (Linux/macOS: `VIENEU_AUTOLOAD=1 uv run vieneu-web`; PowerShell: `$env:VIENEU_AUTOLOAD=1; uv run vieneu-web`).
+   `VIENEU_AUTOLOAD_BACKBONE` / `VIENEU_AUTOLOAD_DEVICE` pick another backbone or device (defaults: VieNeu-TTS-v3-Turbo, Auto).
+
 ---
 
 

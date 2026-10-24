@@ -271,12 +271,64 @@ def restore_ui_state():
     """Update UI components based on persistence"""
     global model_loaded
     msg = get_model_status_message()
+
+    # A new browser session starts with empty voice lists and hidden tabs; refill them
+    # from the already-loaded model (manual load in another tab, or VIENEU_AUTOLOAD).
+    voice_update, tab_c, conv_tab_update = gr.update(), gr.update(), gr.update()
+    slot_updates = [gr.update()] * MAX_SPEAKERS
+    if model_loaded and tts is not None:
+        if PRESET_VOICES_CACHE:
+            values = [v[1] if isinstance(v, tuple) else v for v in PRESET_VOICES_CACHE]
+            default_v = getattr(tts, "_default_voice", None)
+            if default_v not in values:
+                default_v = values[0]
+            voice_update = gr.update(choices=PRESET_VOICES_CACHE, value=default_v, interactive=True)
+            slot_updates = [gr.update(choices=CONV_VOICES_CACHE)] * MAX_SPEAKERS
+        tab_c = gr.update(visible=_supports_cloning(current_backbone))
+        is_v2 = current_backbone in ("VieNeu-TTS-v2 (GPU)", "VieNeu-TTS-v2 (CPU)")
+        conv_tab_update = gr.update(visible=is_v2 or "v3" in (current_backbone or "").lower())
+
     return (
         msg, 
         gr.update(interactive=model_loaded), # btn_generate
         gr.update(interactive=model_loaded), # btn_generate_conv
-        gr.update(interactive=False)         # btn_stop
+        gr.update(interactive=False),        # btn_stop
+        voice_update,                        # voice_select
+        tab_c,                               # tab_custom
+        conv_tab_update,                     # conv_tab
+        *slot_updates
     )
+
+
+def autoload_model_from_env():
+    """Load the model at startup when VIENEU_AUTOLOAD is set, so the UI is ready
+    without clicking "Tải Model". VIENEU_AUTOLOAD_BACKBONE / VIENEU_AUTOLOAD_DEVICE
+    override the UI defaults (first backbone in config.yaml, "Auto")."""
+    if not env_bool("VIENEU_AUTOLOAD", default=False):
+        return
+
+    backbone = os.getenv("VIENEU_AUTOLOAD_BACKBONE") or list(BACKBONE_CONFIGS.keys())[0]
+    device = os.getenv("VIENEU_AUTOLOAD_DEVICE", "Auto")
+    if backbone not in BACKBONE_CONFIGS:
+        print(f"⚠️ VIENEU_AUTOLOAD_BACKBONE '{backbone}' không hợp lệ. Chọn một trong: {', '.join(BACKBONE_CONFIGS)}")
+        return
+    if device not in get_available_devices():
+        print(f"⚠️ VIENEU_AUTOLOAD_DEVICE '{device}' không hợp lệ. Chọn một trong: {', '.join(get_available_devices())}")
+        return
+
+    # Same codec the UI picks for each backbone (see on_backbone_change)
+    if "v3" in backbone.lower() or "Turbo" in backbone:
+        codec = "VieNeu-Codec"
+    elif "(CPU)" in backbone:
+        codec = "NeuCodec (ONNX)"
+    else:
+        codec = "NeuCodec (Distill)"
+
+    print(f"🔄 VIENEU_AUTOLOAD: đang tải {backbone} ({codec}) trên {device}...")
+    status = ""
+    for update in load_model(backbone, codec, device, True):
+        status = update[0]
+    print(status if model_loaded else f"❌ Tự động tải model thất bại:\n{status}")
 
 def should_use_lmdeploy(backbone_choice: str, device_choice: str) -> bool:
     """Determine if we should use LMDeploy backend."""
@@ -2608,7 +2660,8 @@ with gr.Blocks(theme=theme, css=css, title="VieNeu-TTS", head=head_html) as demo
         # Persistence: Restore UI state on load
         demo.load(
             fn=restore_ui_state,
-            outputs=[model_status, btn_generate, btn_generate_conv, btn_stop]
+            outputs=[model_status, btn_generate, btn_generate_conv, btn_stop, voice_select,
+                     tab_custom, conv_tab, *speaker_voice_dds]
         ).then(_after_model_load, outputs=[btn_generate_clone, user_voice_dd])
 
 def main():
@@ -2642,6 +2695,7 @@ def main():
         print(f"⚠️  The Web UI is reachable beyond this machine ({where}) with no login. "
               "Set VIENEU_WEB_AUTH=user:password to require one.")
 
+    autoload_model_from_env()
     demo.queue().launch(server_name=server_name, server_port=server_port, share=share, auth=auth)
 
 if __name__ == "__main__":
