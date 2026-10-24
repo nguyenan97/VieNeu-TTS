@@ -2,6 +2,7 @@
 
     uv run python examples/long_form.py input.txt -o output.wav --voice "Hải Đăng"
     uv run python examples/long_form.py input.txt --ref-audio my_voice.wav --temperature 0.7
+    uv run python examples/long_form.py input.txt --voice "Custom Song Ngữ"   # bilingual voice
 
 Paragraphs are synthesized a group at a time and appended to the output file, so
 memory stays flat however long the text is, and progress / ETA are printed as it
@@ -15,6 +16,7 @@ from pathlib import Path
 import numpy as np
 import soundfile as sf
 
+from apps.user_voices import load_user_voices
 from vieneu import Vieneu
 from vieneu_utils.core_utils import V3_GAP_SILENCE, pause_pad_samples
 
@@ -64,6 +66,7 @@ def main() -> None:
 
     t_load = time.time()
     tts = Vieneu(device=args.device, threads=args.threads)
+    load_user_voices(tts)                             # voices saved from the web UI / make_bilingual_voice.py
     voice = args.voice
     if args.ref_audio:
         voice = "_long_form_ref"

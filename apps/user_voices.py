@@ -23,6 +23,7 @@ import numpy as np
 
 USER_MARK = "_user"          # key set on tts._preset_voices entries that came from here
 DEFAULT_DESC = "giọng đã lưu"
+EN_VOICE_KEY = "en_voice"    # bilingual voices (vieneu.bilingual): English voice for English sentences
 
 
 def _kind(tts) -> str:
@@ -58,6 +59,12 @@ def _entry_to_json(v: dict) -> dict:
         out["codes"] = None if codes is None else np.asarray(codes, dtype=np.int64).tolist()
         if isinstance(v.get("style"), str):
             out["style_name"] = v["style"]
+        en = v.get(EN_VOICE_KEY)
+        if isinstance(en, dict):                                     # bilingual voice
+            out[EN_VOICE_KEY] = {
+                "speaker_emb": [round(float(x), 6) for x in np.asarray(en["speaker_emb"], dtype=np.float32).reshape(-1)],
+                "codes": None if en.get("codes") is None else np.asarray(en["codes"], dtype=np.int64).tolist(),
+            }
     return out
 
 
@@ -82,6 +89,12 @@ def _entry_from_json(tts, v: dict) -> Optional[dict]:
         codes = v.get("codes")
         entry["codes"] = None if codes is None else np.asarray(codes, dtype=np.int64)
         entry["style"] = v.get("style_name") or getattr(tts, "default_style", "tu_nhien")
+        en = v.get(EN_VOICE_KEY)
+        if isinstance(en, dict) and en.get("speaker_emb") is not None:
+            entry[EN_VOICE_KEY] = {
+                "speaker_emb": np.asarray(en["speaker_emb"], dtype=np.float32),
+                "codes": None if en.get("codes") is None else np.asarray(en["codes"], dtype=np.int64),
+            }
     return entry
 
 
@@ -141,6 +154,25 @@ def save_user_voice(tts, name: str, ref_audio: str, *, denoise: bool = True, des
     entry = tts._preset_voices[name]
     entry[USER_MARK] = True
     entry["podcast"] = True
+    _write(tts)
+    return name
+
+
+def save_bilingual_voice(tts, name: str, vi_voice: str, en_ref_audio: str, *,
+                         weight: float = 0.8, description: str = "") -> str:
+    """Save ``name`` as a bilingual voice: ``vi_voice`` for Vietnamese, plus an English
+    voice from ``en_ref_audio`` blended ``weight`` toward ``vi_voice`` (vieneu.bilingual)."""
+    from vieneu.bilingual import make_bilingual_voice
+    if not supports_saving(tts) or _kind(tts) != "turbo":
+        raise ValueError("Giọng song ngữ chỉ dùng được với VieNeu v3 Turbo.")
+    name = (name or "").strip()
+    existing = tts._preset_voices.get(name)
+    if not name or (existing is not None and not existing.get(USER_MARK)):
+        raise ValueError(f"Tên giọng '{name}' không hợp lệ hoặc trùng giọng có sẵn.")
+    entry = make_bilingual_voice(tts, vi_voice, en_ref_audio, weight=weight, description=description)
+    entry[USER_MARK] = True
+    entry["podcast"] = True
+    tts._preset_voices[name] = entry
     _write(tts)
     return name
 

@@ -291,6 +291,15 @@ Trước khi normalize, mỗi câu được quét để bọc `<en>…</en>` qua
 - Từ vẫn đọc sai thì tự bọc: `Anh ấy nói <en>no</en> rồi bỏ đi.`
 - Bảng thay từ riêng: `VIENEU_LEXICON=lexicon.json`, ví dụ `{"ESP32": "<en>E S P</en> ba hai", "CBT": "<en>C B T</en>"}`.
 
+**Giọng song ngữ.** Giọng có sẵn là người Việt nên đọc tiếng Anh mang accent Việt. Giọng song ngữ giữ một giọng Việt cho câu tiếng Việt và thêm một giọng Anh cho câu viết hoàn toàn bằng tiếng Anh (mã tham chiếu từ clip tiếng Anh bản ngữ, speaker embedding trộn về phía giọng Việt để nghe như cùng một người):
+
+```bash
+uv run python examples/make_bilingual_voice.py            # tạo "Custom Song Ngữ" = Hải Đăng + giọng Anh (trộn 80%)
+uv run python examples/long_form.py bai.txt --voice "Custom Song Ngữ"
+```
+
+Giọng được lưu ở `~/.vieneu/user_voices_v3_turbo.json` nên cũng hiện trong web UI. Danh sách giọng phổ biến và giọng tiếng Anh: [docs/voices_top.md](docs/voices_top.md).
+
 ### Audio dài (sách, bài viết, podcast)
 
 ```bash

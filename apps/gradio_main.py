@@ -1036,7 +1036,20 @@ def synthesize_speech(text: str, voice_choice: str, custom_audio, custom_text: s
                     and v3_engine_dev is not None and v3_engine_dev.type == "cuda"
                 )
 
-                if v3_can_batch:
+                v3_bilingual = None
+                if mode_tab == "preset_mode" and v_id and v3_label == "v3 Turbo":
+                    from vieneu.bilingual import bilingual_voice_of, has_english
+                    v3_bilingual = bilingual_voice_of(tts, v_id)
+                    if v3_bilingual is not None and not has_english(raw_text):
+                        v3_bilingual = None
+
+                if v3_bilingual is not None:
+                    # Giọng song ngữ: câu tiếng Anh trọn vẹn đọc bằng giọng Anh đi kèm.
+                    yield None, f"⏳ {v3_label}: song ngữ (giọng Việt + giọng Anh)..."
+                    wav = tts.infer(raw_text, voice=v3_bilingual, temperature=temperature,
+                                    max_chars=max_chars_chunk,
+                                    batch_size=v3_bs if v3_engine_dev is not None and v3_engine_dev.type == "cuda" else 1)
+                elif v3_can_batch:
                     from vieneu.v3_turbo_serve import V3TurboBatchEngine
                     if getattr(tts, "_v3_batch_engine", None) is None:
                         tts._v3_batch_engine = V3TurboBatchEngine(tts.engine)

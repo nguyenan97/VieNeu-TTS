@@ -285,6 +285,15 @@ Before normalization each sentence is scanned and words that can only be English
 - Still misread? Tag it yourself: `Anh ấy nói <en>no</en> rồi bỏ đi.`
 - Custom rewrites: `VIENEU_LEXICON=lexicon.json`, e.g. `{"ESP32": "<en>E S P</en> ba hai", "CBT": "<en>C B T</en>"}`.
 
+**Bilingual voices.** The presets are Vietnamese speakers, so their English carries a Vietnamese accent. A bilingual voice keeps a Vietnamese voice for Vietnamese sentences and adds an English voice for sentences written fully in English (reference codes from a native English clip, speaker embedding blended toward the Vietnamese voice so both sound like one person):
+
+```bash
+uv run python examples/make_bilingual_voice.py            # creates "Custom Song Ngữ" = Hải Đăng + English voice (80% blend)
+uv run python examples/long_form.py article.txt --voice "Custom Song Ngữ"
+```
+
+The voice is stored in `~/.vieneu/user_voices_v3_turbo.json`, so it also shows up in the web UI. Popular and English voices: [docs/voices_top.md](docs/voices_top.md).
+
 ### Long-form audio (books, articles, podcasts)
 
 ```bash

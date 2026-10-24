@@ -611,7 +611,20 @@ class V3TurboVieNeuTTS(BaseVieneuTTS):
         ``style`` is deprecated and ignored (kept only so older code keeps running):
         the reading style comes from the reference voice, so output is always the
         natural style.
+
+        A bilingual voice (one with an ``en_voice``, see :mod:`vieneu.bilingual`) reads
+        whole English sentences with its English voice.
         """
+        from .bilingual import bilingual_voice_of, has_english, infer_bilingual
+        bilingual = bilingual_voice_of(self, voice) if ref_audio is None else None
+        if bilingual is not None and has_english(text):
+            return infer_bilingual(
+                self, text, bilingual, denoise=denoise, use_ref_codes=use_ref_codes,
+                temperature=temperature, top_k=top_k, top_p=top_p, max_new_frames=max_new_frames,
+                repetition_penalty=repetition_penalty, repetition_window=repetition_window,
+                max_chars=max_chars, silence_p=silence_p, crossfade_p=crossfade_p,
+                apply_watermark=apply_watermark, batch_size=batch_size, **kwargs)
+
         speaker_emb, ref_codes = self._resolve_ref(voice, ref_audio, denoise, use_ref_codes)
 
         chunks, gaps = normalize_to_chunks_v3_with_gaps(text, max_chars=max_chars)
