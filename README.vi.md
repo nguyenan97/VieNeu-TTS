@@ -284,6 +284,21 @@ audio = vieneu.infer("Nghe hay quá đi [cười]. Để mình nói tiếp [hắ
 > [!TIP]
 > Temperature ~0.8 ổn định nhất.
 
+### Văn bản song ngữ Việt–Anh
+
+Trước khi normalize, mỗi câu được quét để bọc `<en>…</en>` quanh những từ chắc chắn là tiếng Anh: từ không dấu không thể là âm tiết tiếng Việt (`it`, `not`, `but`, `file`…) và từ VIẾT HOA ≥ 4 chữ có trong từ điển tiếng Anh (`MICROSOFT`, `NVIDIA`, `POST`). Câu thuần Việt, URL/email, số La Mã và từ viết tắt ngắn (UBND, HR) giữ nguyên. Tắt bằng `VIENEU_CODESWITCH=0`.
+
+- Từ vẫn đọc sai thì tự bọc: `Anh ấy nói <en>no</en> rồi bỏ đi.`
+- Bảng thay từ riêng: `VIENEU_LEXICON=lexicon.json`, ví dụ `{"ESP32": "<en>E S P</en> ba hai", "CBT": "<en>C B T</en>"}`.
+
+### Audio dài (sách, bài viết, podcast)
+
+```bash
+uv run python examples/long_form.py bai_viet.txt -o bai_viet.wav --voice "Thiện Minh" --temperature 0.7
+```
+
+Script tổng hợp từng nhóm đoạn và ghi dần ra file (RAM không tăng theo độ dài), in tiến độ + thời gian còn lại; trên GPU các chunk được batch. `--ref-audio clip.wav` để clone giọng, `--device cpu|cuda` để chọn phần cứng.
+
 ### 🦜 Clone giọng nói Zero-shot (SDK) <a name="cloning"></a>
 Clone bất kỳ giọng nào từ một clip ngắn. Clip mẫu được **tự khử nhiễu nền** và **cắt còn ≤ 8 giây** trước khi clone — cứ để `denoise=True` trừ khi clip đã sạch.
 

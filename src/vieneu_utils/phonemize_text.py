@@ -241,6 +241,7 @@ def _normalized_sentences_by_para(
     chỉ được chốt một lần ở tầng CHUNK.
     """
     from vieneu_utils.core_utils import split_into_sentences
+    from vieneu_utils.codeswitch import tag_english
 
     paragraphs = [p for p in RE_NEWLINE_SPLIT.split(text) if p.strip()]
     if not paragraphs:
@@ -254,7 +255,11 @@ def _normalized_sentences_by_para(
             continue
         if skip_normalize:
             out.append(sentences)
-        elif keep_cues:
+            continue
+        # Mark English words on the RAW sentence: the normalizer lowercases and
+        # spells ALL-CAPS words, after which "MICROSOFT" can no longer be recovered.
+        sentences = [tag_english(s) for s in sentences]
+        if keep_cues:
             out.append([_normalize_sentence_keep_cues(s, normalizer) for s in sentences])
         else:
             out.append(normalizer.normalize_batch(sentences, punc_norm=False))

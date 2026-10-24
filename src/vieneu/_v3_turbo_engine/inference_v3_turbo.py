@@ -445,6 +445,13 @@ class VieNeuTTSv3Turbo:
     def _resolve_dtype(self, dtype: str) -> torch.dtype:
         if dtype == 'auto':
             if self.device.type == 'cuda':
-                return torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+                # Only native bf16 (Ampere+). On Turing and older, is_bf16_supported()
+                # also reports software emulation, which measured ~25% slower than fp32
+                # on a Quadro T2000; the loader has no fp16 path, so fall back to fp32.
+                try:
+                    native_bf16 = torch.cuda.is_bf16_supported(including_emulation=False)
+                except TypeError:  # torch < 2.3 has no including_emulation
+                    native_bf16 = torch.cuda.get_device_capability(self.device)[0] >= 8
+                return torch.bfloat16 if native_bf16 else torch.float32
             return torch.float32
         return {'float32': torch.float32, 'float16': torch.float16, 'bfloat16': torch.bfloat16}[dtype]

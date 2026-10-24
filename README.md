@@ -278,6 +278,21 @@ Inline tags are supported anywhere in the text: `[cười]` (chuckle), `[thở d
 audio = vieneu.infer("Nghe hay quá đi [cười]. Để mình nói tiếp [hắng giọng].", voice="Hải Đăng")
 ```
 
+### Vietnamese–English text
+
+Before normalization each sentence is scanned and words that can only be English are wrapped in `<en>…</en>`: unaccented words that cannot be a Vietnamese syllable (`it`, `not`, `but`, `file`…) and ALL-CAPS words of 4+ letters found in the English dictionary (`MICROSOFT`, `NVIDIA`, `POST`). Pure Vietnamese sentences, URLs/emails, Roman numerals and short acronyms (UBND, HR) are left alone. Disable with `VIENEU_CODESWITCH=0`.
+
+- Still misread? Tag it yourself: `Anh ấy nói <en>no</en> rồi bỏ đi.`
+- Custom rewrites: `VIENEU_LEXICON=lexicon.json`, e.g. `{"ESP32": "<en>E S P</en> ba hai", "CBT": "<en>C B T</en>"}`.
+
+### Long-form audio (books, articles, podcasts)
+
+```bash
+uv run python examples/long_form.py article.txt -o article.wav --voice "Thiện Minh" --temperature 0.7
+```
+
+The script synthesizes a group of paragraphs at a time and appends to the output file (memory stays flat), printing progress and ETA; on GPU the chunks are batched. Use `--ref-audio clip.wav` to clone a voice and `--device cpu|cuda` to pick the hardware.
+
 ### Voice cloning
 
 Clone any voice from a short reference clip. The clip is cleaned up automatically
